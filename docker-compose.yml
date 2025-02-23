@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: weather_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 20s  # Give PostgreSQL some time to start
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  weather-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: weather-app
+    environment:
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      DB_HOST: postgres
+      DB_NAME: weather_db
+      DB_USER: postgres
+      DB_PASSWORD: mysecretpassword
+    depends_on:
+      postgres:
+        condition: service_healthy  # Wait for PostgreSQL health check to pass
+    networks:
+      - weather-network
+    restart: always
+    volumes:
+      - app_data:/app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    platform: linux/amd64
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - weather-network
+    depends_on:
+      - postgres
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  clickhouse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clickhous
+    container_name: clickhouse-odbc
+    hostname: clickhouse-host
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+      - "9009:9009"
+    volumes:
+      - ./odbc.ini:/etc/odbc.ini
+      - ./odbcinst.ini:/etc/odbcinst.ini
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=password
+    restart: always
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+  
+  
+volumes:
+  postgres_data:
+  app_data:
+
+networks:
+  weather-network:
+    driver: bridge
