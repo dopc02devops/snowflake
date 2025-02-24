@@ -1,0 +1,503 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2025-02-24T04:22:22Z"
+  labels:
+    airbyte: job-pod
+    attempt_id: "2"
+    auto_id: 26654cff-5608-4ed9-bebe-23615e6e8dfe
+    connection_id: e6170003-7899-477e-8a1b-d7f73823b1ab
+    destination_image_name: destination-clickhouse
+    destination_image_version: 1.0.0
+    job_id: "2"
+    job_type: sync
+    mutex_key: e6170003-7899-477e-8a1b-d7f73823b1ab
+    orchestrator_image_name: container-orchestrator
+    orchestrator_image_version: 1.5.0
+    source_image_name: source-postgres
+    source_image_version: 3.6.29
+    sync_step: replication
+    workload_id: e6170003-7899-477e-8a1b-d7f73823b1ab_2_2_sync
+    workspace_id: 923a805b-0aef-4984-abb3-75c16a3b0e37
+  name: replication-job-2-attempt-2
+  namespace: airbyte-abctl
+  resourceVersion: "237031"
+  uid: fb946ec4-4dbd-414a-9ab8-c29dc7b6b50b
+spec:
+  automountServiceAccountToken: false
+  containers:
+  - command:
+    - sh
+    - -c
+    - |-
+      trap "touch /source/TERMINATED /dest/TERMINATED" EXIT
+      /app/airbyte-app/bin/airbyte-container-orchestrator
+    env:
+    - name: ACCEPTANCE_TEST_ENABLED
+      value: "false"
+    - name: MICROMETER_METRICS_OTLP_ENABLED
+      value: "false"
+    - name: MICROMETER_METRICS_STATSD_ENABLED
+      value: "false"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: minio123
+    - name: AIRBYTE_EDITION
+      value: community
+    - name: AIRBYTE_API_AUTH_HEADER_NAME
+      value: X-Airbyte-Auth
+    - name: STORAGE_BUCKET_ACTIVITY_PAYLOAD
+      value: airbyte-storage
+    - name: STATSD_HOST
+      value: localhost
+    - name: AWS_ASSUME_ROLE_SECRET_NAME
+    - name: DD_INTEGRATION_GOOGLE_HTTP_CLIENT_ENABLED
+      value: "false"
+    - name: MICRONAUT_ENVIRONMENTS
+      value: worker-v2,control-plane,oss,local-secrets
+    - name: TRACKING_STRATEGY
+      value: segment
+    - name: AIRBYTE_ROLE
+    - name: WORKLOAD_API_RETRY_DELAY_SECONDS
+      value: "2"
+    - name: DD_SERVICE
+      value: airbyte-container-orchestrator
+    - name: WORKSPACE_ROOT
+      value: /workspace
+    - name: SEGMENT_WRITE_KEY
+      value: 7UDdp5K55CyiGgsauOr2pNNujGvmhaeu
+    - name: INTERNAL_API_HOST
+      value: http://airbyte-abctl-airbyte-server-svc:8001
+    - name: WORKLOAD_API_CONNECT_TIMEOUT_SECONDS
+      value: "30"
+    - name: DEPLOYMENT_MODE
+      value: OSS
+    - name: PUB_SUB_ENABLED
+      value: "false"
+    - name: DD_DOGSTATSD_PORT
+    - name: WORKLOAD_API_HOST
+      value: http://airbyte-abctl-workload-api-server-svc:8007
+    - name: AIRBYTE_API_AUTH_HEADER_VALUE
+      value: Internal worker
+    - name: DD_INTEGRATION_NETTY_ENABLED
+      value: "false"
+    - name: AIRBYTE_VERSION
+      value: 1.5.0
+    - name: MICROMETER_METRICS_STATSD_FLAVOR
+      value: datadog
+    - name: MICROMETER_METRICS_ENABLED
+      value: "false"
+    - name: MICROMETER_METRICS_STEP
+      value: PT1M
+    - name: WORKLOAD_API_READ_TIMEOUT_SECONDS
+      value: "300"
+    - name: KEYCLOAK_CLIENT_ID
+    - name: STATSD_PORT
+      value: "8125"
+    - name: AWS_ACCESS_KEY_ID
+      value: minio
+    - name: DATA_PLANE_SERVICE_ACCOUNT_EMAIL
+    - name: FEATURE_FLAG_CLIENT
+    - name: DD_INTEGRATION_NETTY_4_1_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_HTTPURLCONNECTION_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_URLCONNECTION_ENABLED
+      value: "false"
+    - name: STORAGE_BUCKET_LOG
+      value: airbyte-storage
+    - name: WORKLOAD_API_MAX_RETRIES
+      value: "5"
+    - name: FEATURE_FLAG_BASEURL
+    - name: DD_AGENT_HOST
+    - name: STORAGE_BUCKET_STATE
+      value: airbyte-storage
+    - name: LAUNCHDARKLY_KEY
+    - name: DD_INTEGRATION_GRPC_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_GRPC_CLIENT_ENABLED
+      value: "false"
+    - name: DATA_PLANE_SERVICE_ACCOUNT_CREDENTIALS_PATH
+    - name: FEATURE_FLAG_PATH
+      value: /flags
+    - name: CLOUD_STORAGE_APPENDER_THREADS
+      value: "1"
+    - name: MINIO_ENDPOINT
+      value: http://airbyte-minio-svc:9000
+    - name: STORAGE_BUCKET_WORKLOAD_OUTPUT
+      value: airbyte-storage
+    - name: KEYCLOAK_INTERNAL_REALM_ISSUER
+    - name: STORAGE_TYPE
+      value: MINIO
+    - name: DD_INTEGRATION_GRPC_SERVER_ENABLED
+      value: "false"
+    - name: CONTROL_PLANE_AUTH_ENDPOINT
+    - name: WORKLOAD_API_BEARER_TOKEN
+      valueFrom:
+        secretKeyRef:
+          key: WORKLOAD_API_BEARER_TOKEN
+          name: airbyte-abctl-airbyte-secrets
+    - name: OPERATION_TYPE
+      value: sync
+    - name: WORKLOAD_ID
+      value: e6170003-7899-477e-8a1b-d7f73823b1ab_2_2_sync
+    - name: JOB_ID
+      value: "2"
+    - name: ATTEMPT_ID
+      value: "2"
+    - name: CONNECTION_ID
+      value: e6170003-7899-477e-8a1b-d7f73823b1ab
+    - name: USE_FILE_TRANSFER
+      value: "false"
+    - name: JAVA_OPTS
+    - name: AIRBYTE_STAGING_DIRECTORY
+      value: /staging/files
+    - name: USE_RUNTIME_SECRET_PERSISTENCE
+      value: "false"
+    image: airbyte/container-orchestrator:1.5.0
+    imagePullPolicy: IfNotPresent
+    name: orchestrator
+    resources:
+      limits:
+        cpu: "3"
+        memory: 4Gi
+      requests:
+        cpu: "2"
+        memory: 2Gi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /config
+      name: airbyte-config
+    - mountPath: /source
+      name: airbyte-source
+    - mountPath: /dest
+      name: airbyte-destination
+  - command:
+    - sh
+    - -c
+    - |2-
+          # fail loudly if entry point not set
+          if [ -z "$AIRBYTE_ENTRYPOINT" ]; then
+            echo "Entrypoint was not set! AIRBYTE_ENTRYPOINT must be set in the container."
+            exit 127
+          else
+            echo "Using AIRBYTE_ENTRYPOINT: $AIRBYTE_ENTRYPOINT"
+          fi
+
+          # run connector in background and store PID
+          (# only provide the state flag if present
+      if [ ! -f /source/inputState.json ]; then
+        eval "$AIRBYTE_ENTRYPOINT read --config /source/connectorConfig.json --catalog /source/catalog.json" 2> stderr > stdout
+      else
+        eval "$AIRBYTE_ENTRYPOINT read --config /source/connectorConfig.json --catalog /source/catalog.json --state /source/inputState.json" 2> stderr > stdout
+      fi) &
+          CHILD_PID=$!
+
+          # run busy loop in background that checks for termination file and if present kills the connector operation and exits
+          (while true; do if [ -f TERMINATED ]; then kill $CHILD_PID; exit 0; fi; sleep 10; done) &
+
+          # wait on connector operation
+          wait $CHILD_PID
+          EXIT_CODE=$?
+
+          # write its exit code to a file for the sidecar
+          echo $EXIT_CODE > TEMP_EXIT_CODE.txt
+          # use a swap file to make creation and writing atomic
+          mv TEMP_EXIT_CODE.txt exitCode.txt
+
+          # propagate connector exit code by assuming it
+          exit $EXIT_CODE
+    env:
+    - name: AIRBYTE_EDITION
+      value: community
+    - name: AIRBYTE_VERSION
+      value: 1.5.0
+    - name: AIRBYTE_ROLE
+    - name: DEPLOYMENT_MODE
+      value: OSS
+    - name: FEATURE_FLAG_PATH
+      value: /flags
+    - name: FEATURE_FLAG_BASEURL
+    - name: LAUNCHDARKLY_KEY
+    - name: FEATURE_FLAG_CLIENT
+    - name: USE_STREAM_CAPABLE_STATE
+      value: "true"
+    - name: USE_FILE_TRANSFER
+      value: "false"
+    - name: CONCURRENT_SOURCE_STREAM_READ
+      value: "false"
+    - name: WORKER_CONNECTOR_IMAGE
+      value: airbyte/source-postgres:3.6.29
+    - name: WORKER_JOB_ID
+      value: "2"
+    - name: WORKER_JOB_ATTEMPT
+      value: "2"
+    image: airbyte/source-postgres:3.6.29
+    imagePullPolicy: IfNotPresent
+    name: source
+    resources:
+      limits:
+        cpu: "4"
+        memory: 4Gi
+      requests:
+        cpu: "2"
+        memory: 1Gi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /source
+      name: airbyte-source
+    workingDir: /source
+  - command:
+    - sh
+    - -c
+    - |-
+      # fail loudly if entry point not set
+      if [ -z "$AIRBYTE_ENTRYPOINT" ]; then
+        echo "Entrypoint was not set! AIRBYTE_ENTRYPOINT must be set in the container."
+        exit 127
+      else
+        echo "Using AIRBYTE_ENTRYPOINT: $AIRBYTE_ENTRYPOINT"
+      fi
+
+      # run connector in background and store PID
+      (eval "$AIRBYTE_ENTRYPOINT write --config /dest/connectorConfig.json --catalog /dest/catalog.json" 2> stderr > stdout < stdin) &
+      CHILD_PID=$!
+
+      # run busy loop in background that checks for termination file and if present kills the connector operation and exits
+      (while true; do if [ -f TERMINATED ]; then kill $CHILD_PID; exit 0; fi; sleep 10; done) &
+
+      # wait on connector operation
+      wait $CHILD_PID
+      EXIT_CODE=$?
+
+      # write its exit code to a file for the sidecar
+      echo $EXIT_CODE > TEMP_EXIT_CODE.txt
+      # use a swap file to make creation and writing atomic
+      mv TEMP_EXIT_CODE.txt exitCode.txt
+
+      # propagate connector exit code by assuming it
+      exit $EXIT_CODE
+    env:
+    - name: AIRBYTE_EDITION
+      value: community
+    - name: AIRBYTE_VERSION
+      value: 1.5.0
+    - name: AIRBYTE_ROLE
+    - name: DEPLOYMENT_MODE
+      value: OSS
+    - name: FEATURE_FLAG_PATH
+      value: /flags
+    - name: FEATURE_FLAG_BASEURL
+    - name: LAUNCHDARKLY_KEY
+    - name: FEATURE_FLAG_CLIENT
+    - name: USE_STREAM_CAPABLE_STATE
+      value: "true"
+    - name: USE_FILE_TRANSFER
+      value: "false"
+    - name: CONCURRENT_SOURCE_STREAM_READ
+      value: "false"
+    - name: WORKER_CONNECTOR_IMAGE
+      value: airbyte/destination-clickhouse:1.0.0
+    - name: WORKER_JOB_ID
+      value: "2"
+    - name: WORKER_JOB_ATTEMPT
+      value: "2"
+    image: airbyte/destination-clickhouse:1.0.0
+    imagePullPolicy: IfNotPresent
+    name: destination
+    resources:
+      limits:
+        cpu: "3"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 1Gi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /dest
+      name: airbyte-destination
+    workingDir: /dest
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  imagePullSecrets:
+  - {}
+  initContainers:
+  - env:
+    - name: ACCEPTANCE_TEST_ENABLED
+      value: "false"
+    - name: MICROMETER_METRICS_OTLP_ENABLED
+      value: "false"
+    - name: SECRET_PERSISTENCE
+      value: TESTING_CONFIG_DB_TABLE
+    - name: SECRET_STORE_GCP_PROJECT_ID
+    - name: MICROMETER_METRICS_STATSD_ENABLED
+      value: "false"
+    - name: AIRBYTE_EDITION
+      value: community
+    - name: AIRBYTE_API_AUTH_HEADER_NAME
+      value: X-Airbyte-Auth
+    - name: STATSD_HOST
+      value: localhost
+    - name: MICRONAUT_ENVIRONMENTS
+      value: worker-v2,control-plane,oss,local-secrets
+    - name: DD_INTEGRATION_GOOGLE_HTTP_CLIENT_ENABLED
+      value: "false"
+    - name: TRACKING_STRATEGY
+      value: segment
+    - name: AIRBYTE_ROLE
+    - name: WORKLOAD_API_RETRY_DELAY_SECONDS
+      value: "2"
+    - name: DD_SERVICE
+      value: airbyte-workload-init-container
+    - name: SEGMENT_WRITE_KEY
+      value: 7UDdp5K55CyiGgsauOr2pNNujGvmhaeu
+    - name: LOG_LEVEL
+      value: INFO
+    - name: INTERNAL_API_HOST
+      value: http://airbyte-abctl-airbyte-server-svc:8001
+    - name: WORKLOAD_API_CONNECT_TIMEOUT_SECONDS
+      value: "30"
+    - name: DEPLOYMENT_MODE
+      value: OSS
+    - name: DD_DOGSTATSD_PORT
+    - name: WORKLOAD_API_HOST
+      value: http://airbyte-abctl-workload-api-server-svc:8007
+    - name: AIRBYTE_API_AUTH_HEADER_VALUE
+      value: Internal worker
+    - name: DD_INTEGRATION_NETTY_ENABLED
+      value: "false"
+    - name: VAULT_PREFIX
+    - name: AIRBYTE_VERSION
+      value: 1.5.0
+    - name: DATABASE_USER
+      value: airbyte
+    - name: DATABASE_PASSWORD
+      value: airbyte
+    - name: MICROMETER_METRICS_STATSD_FLAVOR
+      value: datadog
+    - name: MICROMETER_METRICS_ENABLED
+      value: "false"
+    - name: MICROMETER_METRICS_STEP
+      value: PT1M
+    - name: WORKLOAD_API_READ_TIMEOUT_SECONDS
+      value: "300"
+    - name: KEYCLOAK_CLIENT_ID
+    - name: STATSD_PORT
+      value: "8125"
+    - name: DATABASE_URL
+      value: jdbc:postgresql://airbyte-db-svc:5432/db-airbyte
+    - name: AWS_KMS_KEY_ARN
+    - name: DATA_PLANE_SERVICE_ACCOUNT_EMAIL
+    - name: FEATURE_FLAG_CLIENT
+    - name: AB_AZURE_KEY_VAULT_VAULT_URL
+    - name: AB_AZURE_KEY_VAULT_TENANT_ID
+    - name: DD_INTEGRATION_NETTY_4_1_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_HTTPURLCONNECTION_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_URLCONNECTION_ENABLED
+      value: "false"
+    - name: WORKLOAD_API_MAX_RETRIES
+      value: "5"
+    - name: AB_AZURE_KEY_VAULT_TAGS
+    - name: VAULT_ADDRESS
+    - name: FEATURE_FLAG_BASEURL
+    - name: DD_AGENT_HOST
+    - name: LAUNCHDARKLY_KEY
+    - name: DD_INTEGRATION_GRPC_ENABLED
+      value: "false"
+    - name: DD_INTEGRATION_GRPC_CLIENT_ENABLED
+      value: "false"
+    - name: S3_PATH_STYLE_ACCESS
+      value: "true"
+    - name: AWS_SECRET_MANAGER_SECRET_TAGS
+    - name: DATA_PLANE_SERVICE_ACCOUNT_CREDENTIALS_PATH
+    - name: AWS_SECRET_MANAGER_REGION
+    - name: FEATURE_FLAG_PATH
+      value: /flags
+    - name: CLOUD_STORAGE_APPENDER_THREADS
+      value: "1"
+    - name: KEYCLOAK_INTERNAL_REALM_ISSUER
+    - name: DD_INTEGRATION_GRPC_SERVER_ENABLED
+      value: "false"
+    - name: CONTROL_PLANE_AUTH_ENDPOINT
+    - name: WORKLOAD_API_BEARER_TOKEN
+      valueFrom:
+        secretKeyRef:
+          key: WORKLOAD_API_BEARER_TOKEN
+          name: airbyte-abctl-airbyte-secrets
+    - name: OPERATION_TYPE
+      value: sync
+    - name: WORKLOAD_ID
+      value: e6170003-7899-477e-8a1b-d7f73823b1ab_2_2_sync
+    - name: JOB_ID
+      value: "2"
+    - name: ATTEMPT_ID
+      value: "2"
+    - name: CONNECTION_ID
+      value: e6170003-7899-477e-8a1b-d7f73823b1ab
+    - name: USE_FILE_TRANSFER
+      value: "false"
+    - name: JAVA_OPTS
+    - name: AIRBYTE_STAGING_DIRECTORY
+      value: /staging/files
+    - name: USE_RUNTIME_SECRET_PERSISTENCE
+      value: "false"
+    image: airbyte/workload-init-container:1.5.0
+    imagePullPolicy: IfNotPresent
+    name: init
+    resources:
+      limits:
+        cpu: "3"
+        memory: 4Gi
+      requests:
+        cpu: "2"
+        memory: 2Gi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /config
+      name: airbyte-config
+    - mountPath: /source
+      name: airbyte-source
+    - mountPath: /dest
+      name: airbyte-destination
+    workingDir: /config
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Never
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: airbyte-admin
+  serviceAccountName: airbyte-admin
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - emptyDir:
+      medium: Memory
+    name: airbyte-config
+  - emptyDir: {}
+    name: airbyte-source
+  - emptyDir: {}
+    name: airbyte-destination
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-24T04:22:22Z"
+    message: '0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are
+      available: 1 No preemption victims found for incoming pod.'
+    reason: Unschedulable
+    status: "False"
+    type: PodScheduled
+  phase: Pending
+  qosClass: Burstable
