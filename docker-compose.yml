@@ -103,8 +103,57 @@ services:
       resources:
         limits:
           memory: 4g
-  
-  
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 1888:1888   # pprof extension
+      - 8888:8888   # Prometheus metrics exposed by the Collector
+      - 8889:8889   # Prometheus exporter metrics
+      - 13133:13133 # health_check extension
+      - 55679:55679 # zpages extension
+      - 4317:4317 # OTLP gRPC receiver
+    command:
+      - "--config=/etc/otelcol-contrib/config.yaml"
+    depends_on:
+      - jaeger
+    networks:
+      - weather-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "6831:6831/udp"   # UDP port for Jaeger agent
+      - "16686:16686"     # Web UI
+      - "14268:14268"     # HTTP port for spans
+      - "14250:14250"     # gRPC for Jaeger collector
+      # Removed OTLP ports since otel-collector is using them
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411  # Enable Zipkin compatibility (if needed)
+      - LOG_LEVEL=info                   # Reduce log verbosity
+    networks:
+      - weather-network
+
+  prometheus:  # Fixed the typo here from 'rometheus' to 'prometheus'
+    image: prom/prometheus:latest
+    container_name: "prometheus"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"  # Prometheus web UI
+    depends_on:
+      - otel-collector
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - weather-network
+
 volumes:
   postgres_data:
   app_data:
