@@ -73,9 +73,12 @@ def save_weather_data(weather_data):
         INSERT INTO weather_data (
             city, country, latitude, longitude, temperature, feels_like,
             humidity, pressure, wind_speed, wind_direction, description, visibility,
-            is_daytime
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            is_daytime, created_at
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """)
+
+    # Ensure created_at follows RFC 3339 format
+    created_at = datetime.utcnow().isoformat()  # Generates format: 'YYYY-MM-DDTHH:MM:SS.ssssss'
 
     cursor.execute(insert_query, (
         weather_data["city"],
@@ -90,7 +93,8 @@ def save_weather_data(weather_data):
         weather_data["wind_direction"],
         weather_data["description"],
         weather_data["visibility"],
-        weather_data["is_daytime"]
+        weather_data["is_daytime"],
+        created_at  # Add created_at field
     ))
 
     conn.commit()

@@ -1,95 +1,74 @@
 
-https://docs.airbyte.com/using-airbyte/getting-started/oss-quickstart
-https://clickhouse.com/docs/knowledgebase/how-to-set-up-ch-on-docker-odbc-connect-mssql
+# Airbyte Local Installation Guide
 
-### DOWNLOAD AIRBYTE ###
+This guide will walk you through the steps to install and manage Airbyte locally on your machine using the `abctl` command-line tool.
+
+## Prerequisites
+Before starting, ensure you have the following installed on your machine:
+- **Homebrew**: A package manager for macOS and Linux.
+- **Docker**: Airbyte requires Docker to run the services.
+
+## Step 1: Download Airbyte
+To begin, install the `abctl` command-line tool using Homebrew:
+```bash
 brew tap airbytehq/tap
 brew install abctl
 brew upgrade abctl
+```
+## Step 2: Install Airbyte Locally
+Once abctl is installed, you can install Airbyte locally. There are several installation options based on your requirements:
 
-### INSATLL AIRBYTE ###
+- Basic installation (default):
+```bash
 abctl local install --insecure-cookies
+```
+- Low-resource mode (for machines with limited resources):
+```bash
 abctl local install --low-resource-mode
+```
+- Low-resource mode with insecure cookies (for machines with limited resources and if you need insecure cookies enabled):
+```bash
 abctl local install --low-resource-mode --insecure-cookies
-
-### PASSWORD ###
+```
+## Step 3: Set Up Credentials
+To set up your Airbyte local credentials, run the following command:
+```bash
 abctl local credentials
+```
+This will prompt you to enter the required credentials for the Airbyte instance.
 
-### CHANGE PASSWORD ###
+## Step 4: Change Password
+To change the password for your local Airbyte instance, run the following command:
+```bash
 abctl local credentials --password YourStrongPasswordExample
+```
+Replace YourStrongPasswordExample with your new password.
 
-### UNINSATLL AIRBYTE ###
+## Step 5: Uninstall Airbyte
+If you ever need to uninstall Airbyte, you can do so with the following command:
+- Uninstall Airbyte (but keep persisted data):
+```bash
 abctl local uninstall
+```
+- Completely uninstall Airbyte (including persisted data):
+```bash
 abctl local uninstall --persisted
+```
+- Remove any leftover configuration files:
+```bash
 rm -rf ~/.airbyte/abctl
+```
+This will remove all configurations and cached data related to Airbyte from your system.
 
+## links
+- https://docs.airbyte.com/using-airbyte/getting-started/oss-quickstart
+- https://clickhouse.com/docs/knowledgebase/how-to-set-up-ch-on-docker-odbc-connect-mssql
 
-
-docker stop airbyte-abctl-control-plane
-
-
-# snowflake
-
-https://signup.snowflake.com/#
-
-
-https://home.openweathermap.org/
-
-### EMAIL ###
+### EMAIL
 USER_EMAIL=dopc02devops1@gmail.com
 ORGANISATION: NSN
 
-
+## Docker commands
 docker-compose up --build -d
 docker-compose up -d --force-recreate
 docker-compose down
-
-host.docker.internal
-
-
-
-
-
-export KUBECONFIG=~/.airbyte/abctl/abctl.kubeconfig
-
-kubectl delete namespace airbyte-abctl
-kubectl delete deployment --all -n airbyte-abctl
-
-
-
-
-kubectl describe pod replication-job-2-attempt-1 -n airbyte-abctl
-
-kubectl top nodes
-kubectl top pods -n airbyte-abctl
-
-kubectl edit deployment airbyte-abctl-worker -n airbyte-abctl
-
-##########
-edit-  deployment file 
-kubectl get deployment airbyte-abctl-worker -n airbyte-abctl -o yaml > airbyte-worker-deployment.yaml
-
-kubectl apply -f airbyte-worker-deployment.yaml -n airbyte-abctl
-kubectl rollout restart deployment airbyte-abctl-worker -n airbyte-abctl
-###############
-
-kubectl get pod replication-job-2-attempt-2 -n airbyte-abctl -o yaml > replication-job-pod.yaml
-kubectl delete pod replication-job-2-attempt-3 -n airbyte-abctl
-
-kubectl apply -f replication-job-pod.yaml -n airbyte-abctl
-kubectl rollout restart deployment replication-job-2-attempt-2 -n airbyte-abctl
-
-
-install metric server
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-kubectl get pods -n kube-system | grep metrics-server
-
-kubectl describe pod metrics-server-75bf97fcc9-q588j -n kube-system
-kubectl logs -n kube-system metrics-server-75bf97fcc9-q588j
-
-
-### To use Context ####
-- kubectl config get-contexts
-- kubectl config use-context kind-airbyte-abctl
-- kubectl get all -n airbyte-abctl
-- kubectl get pods -n airbyte-abctl
