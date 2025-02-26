@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-
+EXPOSE 9089
 RUN useradd --create-home --shell /bin/bash appuser
 
 WORKDIR /app

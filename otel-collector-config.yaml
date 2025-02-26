@@ -1,23 +1,49 @@
+# Defines components that receive telemetry data from applications or other telemetry sources.
 receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317
+        endpoint: 0.0.0.0:4317 
+
+# The OpenTelemetry Collector buffers telemetry data.
+# It sends data either every 5 seconds or when 100 items are collected, whichever comes first.
+# This reduces network load and improves performance.
 processors:
-extensions:
-  health_check: {}
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+# Traces are sent to Jaeger via OTLP/gRPC on port 4317.
+# Metrics are exposed for Prometheus on port 8889.
+# TLS is disabled for OTLP communication.
 exporters:
+  debug: {}
   otlp:
     endpoint: jaeger:4317
     tls:
       insecure: true
   prometheus:
-    endpoint: "0.0.0.0:9090"
+    endpoint: "0.0.0.0:8889"
+
+# This configuration defines extensions in an OpenTelemetry Collector setup. 
+# Extensions provide additional capabilities like debugging, profiling, and health monitoring.
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+# This service configuration defines how the OpenTelemetry Collector is structured, 
+# including its extensions and pipelines for handling traces and metrics.
 service:
+  extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp]
     metrics:
       receivers: [otlp]
-      exporters: [prometheus]
+      processors: [batch]
+      exporters: [debug, prometheus]

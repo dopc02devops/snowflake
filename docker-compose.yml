@@ -26,6 +26,19 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    depends_on:
+      - jaeger
+  
+  postgres_exporter:
+    image: wrouesnel/postgres_exporter:latest
+    platform: linux/amd64
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:mysecretpassword@postgres-db:5432/weather_db?sslmode=disable
+    ports:
+      - "9187:9187"  # PostgreSQL exporter metrics port
+    networks:
+      - weather-network
 
   weather-app:
     build:
@@ -52,6 +65,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    ports:
+      - "9089:9089"
 
   pgadmin:
     image: dpage/pgadmin4
@@ -77,7 +92,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: clickhous
-    container_name: clickhouse-odbc
+    container_name: clickhouse
     hostname: clickhouse-host
     ports:
       - "9000:9000"
@@ -92,6 +107,8 @@ services:
       - CLICKHOUSE_USER=admin
       - CLICKHOUSE_PASSWORD=password
     restart: always
+    networks:
+      - weather-network
     ulimits:
       memlock:
         soft: -1
@@ -106,6 +123,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib
+    container_name: otel-collector
     volumes:
       - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
     ports:
@@ -115,6 +133,7 @@ services:
       - 13133:13133 # health_check extension
       - 55679:55679 # zpages extension
       - 4317:4317 # OTLP gRPC receiver
+      - 4318:4318 # OTLP http receiver
     command:
       - "--config=/etc/otelcol-contrib/config.yaml"
     depends_on:
@@ -124,26 +143,29 @@ services:
 
   jaeger:
     image: jaegertracing/all-in-one:latest
+    container_name: jaeger
     restart: always
     ports:
       - "6831:6831/udp"   # UDP port for Jaeger agent
       - "16686:16686"     # Web UI
       - "14268:14268"     # HTTP port for spans
       - "14250:14250"     # gRPC for Jaeger collector
-      # Removed OTLP ports since otel-collector is using them
-    environment:
-      - COLLECTOR_ZIPKIN_HTTP_PORT=9411  # Enable Zipkin compatibility (if needed)
-      - LOG_LEVEL=info                   # Reduce log verbosity
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "5775:5775"
+      - 9411:9411
     networks:
       - weather-network
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: 9411
 
-  prometheus:  # Fixed the typo here from 'rometheus' to 'prometheus'
+  prometheus: 
     image: prom/prometheus:latest
     container_name: "prometheus"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"  # Prometheus web UI
+      - "9090:9090"
     depends_on:
       - otel-collector
     logging:

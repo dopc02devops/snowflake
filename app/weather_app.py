@@ -4,7 +4,36 @@ import logging
 import psycopg2
 from datetime import datetime
 from psycopg2 import sql
-import time  # Import time module to add delay
+import time
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from prometheus_client import start_http_server, Counter, Histogram
+
+# Prometheus metrics setup
+REQUEST_COUNTER = Counter('weather_app_requests_total', 'Total number of requests to the weather app')
+RESPONSE_TIME_HISTOGRAM = Histogram('weather_app_response_duration_seconds', 'Histogram of response durations')
+
+# Set up OpenTelemetry tracing
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+
+# Set up Jaeger Exporter to use Thrift protocol (since gRPC is unavailable)
+jaeger_exporter = JaegerExporter(
+    agent_host_name="jaeger",  # Jaeger agent hostname
+    agent_port=5775,  # Default port for Jaeger Thrift agent
+)
+
+# Use SimpleSpanProcessor for exporting traces
+span_processor = SimpleSpanProcessor(jaeger_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
+
+# Instrument the requests and psycopg2 libraries for tracing
+RequestsInstrumentor().instrument()
+Psycopg2Instrumentor().instrument()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,13 +56,14 @@ if not API_KEY:
 # Function to connect to the PostgreSQL database
 def get_db_connection():
     try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD
-        )
-        return conn
+        with tracer.start_as_current_span("db_connection"):
+            conn = psycopg2.connect(
+                host=DB_HOST,
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD
+            )
+            return conn
     except Exception as e:
         logger.error(f"Error connecting to the database: {e}")
         exit(1)
@@ -77,8 +107,7 @@ def save_weather_data(weather_data):
         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """)
 
-    # Ensure created_at follows RFC 3339 format
-    created_at = datetime.utcnow().isoformat()  # Generates format: 'YYYY-MM-DDTHH:MM:SS.ssssss'
+    created_at = datetime.utcnow().isoformat()  # RFC 3339 format
 
     cursor.execute(insert_query, (
         weather_data["city"],
@@ -112,52 +141,62 @@ def get_weather(city):
 
     logger.info(f"Fetching weather data for {city}")
     try:
-        response = requests.get(BASE_URL, params=params)
-        if response.status_code == 200:
-            logger.info(f"Successfully fetched weather data for {city}")
-            data = response.json()
+        with tracer.start_as_current_span("weather_request"):
+            start_time = time.time()  # Start timing the response
+            response = requests.get(BASE_URL, params=params)
+            RESPONSE_TIME_HISTOGRAM.observe(time.time() - start_time)  # Record the response duration
 
-            # Convert timestamps to datetime objects
-            sunrise = datetime.utcfromtimestamp(data["sys"]["sunrise"])
-            sunset = datetime.utcfromtimestamp(data["sys"]["sunset"])
-            current_time = datetime.utcfromtimestamp(data["dt"])
+            if response.status_code == 200:
+                logger.info(f"Successfully fetched weather data for {city}")
+                data = response.json()
 
-            weather_info = {
-                "city": city,
-                "country": data["sys"]["country"],
-                "latitude": data["coord"]["lat"],
-                "longitude": data["coord"]["lon"],
-                "temperature": data["main"]["temp"],
-                "feels_like": data["main"]["feels_like"],
-                "humidity": data["main"]["humidity"],
-                "pressure": data["main"]["pressure"],
-                "wind_speed": data["wind"]["speed"],
-                "wind_direction": data["wind"]["deg"],
-                "description": data["weather"][0]["description"],
-                "visibility": data.get("visibility", 0),  # Default to 0 if not available
-                "is_daytime": sunrise < current_time < sunset  # Check if current time is between sunrise and sunset
-            }
+                sunrise = datetime.utcfromtimestamp(data["sys"]["sunrise"])
+                sunset = datetime.utcfromtimestamp(data["sys"]["sunset"])
+                current_time = datetime.utcfromtimestamp(data["dt"])
 
-            return weather_info
-        else:
-            logger.error(f"Failed to fetch weather data for {city} - Status Code: {response.status_code}")
-            return None
+                weather_info = {
+                    "city": city,
+                    "country": data["sys"]["country"],
+                    "latitude": data["coord"]["lat"],
+                    "longitude": data["coord"]["lon"],
+                    "temperature": data["main"]["temp"],
+                    "feels_like": data["main"]["feels_like"],
+                    "humidity": data["main"]["humidity"],
+                    "pressure": data["main"]["pressure"],
+                    "wind_speed": data["wind"]["speed"],
+                    "wind_direction": data["wind"]["deg"],
+                    "description": data["weather"][0]["description"],
+                    "visibility": data.get("visibility", 0),
+                    "is_daytime": sunrise < current_time < sunset
+                }
+
+                REQUEST_COUNTER.inc()  # Increment the request counter for every successful API call
+                return weather_info
+            else:
+                logger.error(f"Failed to fetch weather data for {city} - Status Code: {response.status_code}")
+                return None
     except requests.exceptions.RequestException as e:
         logger.error(f"Error occurred while fetching weather data for {city}: {e}")
         return None
 
+# Start the Prometheus HTTP server to expose metrics on port 9089
+start_http_server(9089)
+
 # Main function to loop through cities and fetch/save the weather data
 def main():
-    while True:  # Keep the loop running indefinitely
-        for city in CITIES:
-            weather_data = get_weather(city)
-            if weather_data:
-                save_weather_data(weather_data)
-            else:
-                logger.error(f"No weather data available for {city}")
-        
-        logger.info("Waiting for 2 minutes before fetching again.")
-        time.sleep(120)  # Wait for 2 minutes before fetching again
+    try:
+        while True:  # Keep the loop running indefinitely
+            for city in CITIES:
+                weather_data = get_weather(city)
+                if weather_data:
+                    save_weather_data(weather_data)
+                else:
+                    logger.error(f"No weather data available for {city}")
+
+            logger.info("Waiting for 2 minutes before fetching again.")
+            time.sleep(120)  # Wait for 2 minutes before fetching again
+    except KeyboardInterrupt:
+        logger.info("Process interrupted. Shutting down gracefully.")
 
 if __name__ == "__main__":
     main()
