@@ -98,7 +98,8 @@ def create_table_if_not_exists(cursor):
 
 # Function to save weather data to PostgreSQL
 def save_weather_data(weather_data, trace_id):
-    logger.info(f"Saving weather data for {weather_data.get('city', 'Unknown')} [trace_id={trace_id}]")
+    city_name = weather_data.get('name', 'Unknown')  # Use 'name' key for city
+    logger.info(f"Saving weather data for {city_name} [trace_id={trace_id}]")
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
             create_table_if_not_exists(cursor)
@@ -114,19 +115,19 @@ def save_weather_data(weather_data, trace_id):
             
             created_at = datetime.utcnow().isoformat()
             values = (
-                weather_data.get("city", ""),
-                weather_data.get("country", ""),
-                weather_data.get("latitude", 0.0),
-                weather_data.get("longitude", 0.0),
-                weather_data.get("temperature", 0.0),
-                weather_data.get("feels_like", 0.0),
-                weather_data.get("humidity", 0),
-                weather_data.get("pressure", 0),
-                weather_data.get("wind_speed", 0.0),
-                weather_data.get("wind_direction", 0),
-                weather_data.get("description", ""),
+                weather_data.get("name", ""),
+                weather_data.get("sys", {}).get("country", ""),
+                weather_data.get("coord", {}).get("lat", 0.0),
+                weather_data.get("coord", {}).get("lon", 0.0),
+                weather_data.get("main", {}).get("temp", 0.0),
+                weather_data.get("main", {}).get("feels_like", 0.0),
+                weather_data.get("main", {}).get("humidity", 0),
+                weather_data.get("main", {}).get("pressure", 0),
+                weather_data.get("wind", {}).get("speed", 0.0),
+                weather_data.get("wind", {}).get("deg", 0),
+                weather_data.get("weather", [{}])[0].get("description", ""),
                 weather_data.get("visibility", 0),
-                weather_data.get("is_daytime", False),
+                weather_data.get("sys", {}).get("sunrise", 0) > 0,  # Assuming 'sunrise' is a proxy for daytime info
                 created_at,
                 trace_id  # Include the trace_id here
             )
@@ -134,7 +135,7 @@ def save_weather_data(weather_data, trace_id):
             # Execute the query
             cursor.execute(insert_query, values)
             conn.commit()
-            logger.info(f"Weather data for {weather_data.get('city', 'Unknown city')} saved successfully [trace_id={trace_id}].")
+            logger.info(f"Weather data for {city_name} saved successfully [trace_id={trace_id}].")
 
 # Function to get weather data from API
 def get_weather(city):
@@ -150,9 +151,9 @@ def get_weather(city):
             if response.status_code == 200:
                 weather_data = response.json()
                 
-                # Check if the response has the necessary keys
-                if 'city' not in weather_data:
-                    logger.error(f"Missing 'city' in the weather data response for {city}. Response: {weather_data} [trace_id={trace_id}]")
+                # Check if the response has the necessary fields
+                if 'name' not in weather_data:
+                    logger.error(f"Missing 'name' in the weather data response for {city}. Response: {weather_data} [trace_id={trace_id}]")
                     return None
                 
                 logger.info(f"Weather data for {city} fetched successfully [trace_id={trace_id}].")
