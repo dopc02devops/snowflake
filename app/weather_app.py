@@ -7,33 +7,32 @@ from psycopg2 import sql
 import time
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+# Set up OpenTelemetry tracer provider and processor
+provider = TracerProvider()
+processor = BatchSpanProcessor(ConsoleSpanExporter())
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+# Set up OTLP exporter for OpenTelemetry (assuming you have an OTEL collector running)
+otlp_exporter = OTLPSpanExporter(endpoint="otel-collector:4317")  # Adjust endpoint if needed
+span_processor = SimpleSpanProcessor(otlp_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
+
+# Create a global tracer
+tracer = trace.get_tracer("weather_app.trace")
+
 from prometheus_client import start_http_server, Counter, Histogram
 
 # Prometheus metrics setup
 REQUEST_COUNTER = Counter('weather_app_requests_total', 'Total number of requests to the weather app')
 RESPONSE_TIME_HISTOGRAM = Histogram('weather_app_response_duration_seconds', 'Histogram of response durations')
-
-# Set up OpenTelemetry tracing
-trace.set_tracer_provider(TracerProvider())
-tracer = trace.get_tracer(__name__)
-
-# Set up Jaeger Exporter to use Thrift protocol (since gRPC is unavailable)
-jaeger_exporter = JaegerExporter(
-    agent_host_name="jaeger",  # Jaeger agent hostname
-    agent_port=5775,  # Default port for Jaeger Thrift agent
-)
-
-# Use SimpleSpanProcessor for exporting traces
-span_processor = SimpleSpanProcessor(jaeger_exporter)
-trace.get_tracer_provider().add_span_processor(span_processor)
-
-# Instrument the requests and psycopg2 libraries for tracing
-RequestsInstrumentor().instrument()
-Psycopg2Instrumentor().instrument()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,7 +52,7 @@ if not API_KEY:
     logger.error("API Key is missing! Please set the OPENWEATHER_API_KEY environment variable.")
     exit(1)
 
-# Function to connect to the PostgreSQL database
+# Function to connect to the PostgreSQL database with tracing
 def get_db_connection():
     try:
         with tracer.start_as_current_span("db_connection"):
@@ -141,7 +140,15 @@ def get_weather(city):
 
     logger.info(f"Fetching weather data for {city}")
     try:
-        with tracer.start_as_current_span("weather_request"):
+        # Start a new span for the weather request
+        with tracer.start_as_current_span("weather_request") as span:
+            trace_id = span.get_span_context().trace_id  # Retrieve the trace_id
+
+            # Truncate the trace_id to the first 32 hex characters (if needed)
+            trace_id = format(trace_id, '032x')[:32]  # Ensure it's a 32-character string
+            logger.info(f"Trace ID for {city}: {trace_id}")
+            print(f"Trace ID for {city}: {trace_id}")  # Printing the trace_id to console
+
             start_time = time.time()  # Start timing the response
             response = requests.get(BASE_URL, params=params)
             RESPONSE_TIME_HISTOGRAM.observe(time.time() - start_time)  # Record the response duration
@@ -167,7 +174,8 @@ def get_weather(city):
                     "wind_direction": data["wind"]["deg"],
                     "description": data["weather"][0]["description"],
                     "visibility": data.get("visibility", 0),
-                    "is_daytime": sunrise < current_time < sunset
+                    "is_daytime": sunrise < current_time < sunset,
+                    "trace_id": trace_id  # Add trace_id to weather data
                 }
 
                 REQUEST_COUNTER.inc()  # Increment the request counter for every successful API call

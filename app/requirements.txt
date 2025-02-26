@@ -1,10 +1,9 @@
+
 requests
 psycopg2-binary
-python-dotenv
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-instrumentation-requests
 opentelemetry-instrumentation-psycopg2
-opentelemetry-exporter-jaeger
-opentelemetry-exporter-jaeger-thrift
-prometheus_client
+opentelemetry-exporter-otlp
+prometheus-client
