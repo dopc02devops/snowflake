@@ -1,32 +1,37 @@
-# Defines components that receive telemetry data from applications or other telemetry sources.
 receivers:
+  # jaeger:
+  #   protocols:
+  #     grpc:
+  #       endpoint: 0.0.0.0:14250
+  #     thrift_http:
+  #       endpoint: 0.0.0.0:14268
+  #     thrift_compact:
+  #       endpoint: 0.0.0.0:6831
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4317 
+        endpoint: 0.0.0.0:4317
+        cors:
+          allowed_origins:
+            - http://*
+            - https://*
 
-# The OpenTelemetry Collector buffers telemetry data.
-# It sends data either every 5 seconds or when 100 items are collected, whichever comes first.
-# This reduces network load and improves performance.
 processors:
   batch:
-    timeout: 5s
-    send_batch_size: 100
+    timeout: 10s
+    send_batch_size: 4000
 
-# Traces are sent to Jaeger via OTLP/gRPC on port 4317.
-# Metrics are exposed for Prometheus on port 8889.
-# TLS is disabled for OTLP communication.
 exporters:
   debug: {}
   otlp:
-    endpoint: jaeger:4317
+    endpoint: jaeger:4317  # Jaeger container name in your Docker Compose
     tls:
       insecure: true
+    sending_queue:
+      queue_size: 1000000
   prometheus:
     endpoint: "0.0.0.0:8889"
 
-# This configuration defines extensions in an OpenTelemetry Collector setup. 
-# Extensions provide additional capabilities like debugging, profiling, and health monitoring.
 extensions:
   health_check:
   pprof:
@@ -34,8 +39,6 @@ extensions:
   zpages:
     endpoint: :55679
 
-# This service configuration defines how the OpenTelemetry Collector is structured, 
-# including its extensions and pipelines for handling traces and metrics.
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
